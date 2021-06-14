@@ -55,14 +55,18 @@ class Event(Cog_Extension):
             if askpage:
                if int(askpage.group()[1:])<pageCount+1:
                   askNum=int(askpage.group()[1:])
-            if allpage:
+                  embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+                  embed.set_image(url="https://pixiv.cat/"+strf+"-"+str(askNum)+".jpg")
+                  embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                  await msg.channel.send(embed=embed)
+            elif allpage:
                for c in range(1,pageCount+1):
                   await msg.channel.send("https://pixiv.cat/"+strf+"-"+str(c)+".jpg")
             else:
-               embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-               embed.set_image(url="https://pixiv.cat/"+strf+"-"+str(askNum)+".jpg")
-               embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
-               await msg.channel.send(embed=embed)
+                  embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+                  embed.set_image(url="https://pixiv.cat/"+strf+"-1.jpg")
+                  embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                  await msg.channel.send(embed=embed)
          else:
             embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
             embed.set_image(url="https://pixiv.cat/"+strf+".jpg")
