@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from core.classes import Cog_Extension
+from plurk_oauth import PlurkAPI
 import json,random
 import requests
 import re
@@ -19,12 +20,19 @@ class Event(Cog_Extension):
    #以下twitter
    p4=re.compile('twitter\.com\/(\w{0,60})\/status')
    p5=re.compile('t\.co\/')
+   #以下plurk
+   p6=re.compile('www\.plurk\.com\/p')
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
+   #twitter oauth
    auth = tweepy.OAuthHandler(jdata['consumer_key'], jdata['consumer_secret'])
    auth.set_access_token(jdata['access_token'], jdata['access_token_secret'])
    api = tweepy.API(auth)
+   
+   #plurk oauth
+   plurk = PlurkAPI(jdata['plurk_consumer_key'], jdata['plurk_consumer_secret'])
+   plurk.authorize(jdata['plurk_access_token'], jdata['plurk_access_token_secret'])
 
    @commands.Cog.listener()
    async def on_message(self,msg):
@@ -111,10 +119,47 @@ class Event(Cog_Extension):
                   await msg.edit(suppress=True)
                except:
                   print('沒有關閉embed的權限')
-
-
-
-
+      #以下plurk
+      a=self.p6.search(msg.content)
+      if a!=None:
+         url = re.search("(?P<url>https?://www.plurk.com/p/[^\s]{6})", msg.content).group("url")
+         plurk_id = int((url.rsplit('/', 1)[-1]), 36)
+         json_object_string = self.plurk.callAPI('/APP/Timeline/getPlurk', options={'plurk_id': plurk_id})
+         owner_id = json_object_string['plurk']['owner_id']
+         nick_name = json_object_string['plurk_users'][str(owner_id)]['nick_name']
+         if json_object_string:
+             content_string = json_object_string['plurk']['content']
+             try:
+                 image_url = re.search("(?P<url>https?://images.plurk.com/[^\s]+.(?:png|jpg|gif))", content_string).group("url")
+                 colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+                 embed=discord.Embed(title='plurk',url=url, color=colonn)
+                 embed.set_image(url=image_url)
+                 embed.set_author(name=nick_name, url="https://www.plurk.com/"+nick_name)
+                 await msg.channel.send(embed=embed)
+                 allpage = re.search('all', msg.content[a.start():])
+                 if allpage:
+                    image_urls = re.findall("(?P<url>https?://images.plurk.com/(?!mx_)[^\s]+.(?:png|jpg|gif))", content_string, re.DOTALL)
+                    image_urls_dedupe = []
+                    for index in range(len(image_urls)):
+                        if image_urls[index] not in image_urls_dedupe:
+                            image_urls_dedupe.append(image_urls[index])
+                    list_len = len(image_urls_dedupe)
+                    if list_len > 1:
+                        for index in range(1, list_len):
+                            await msg.channel.send(image_urls_dedupe[index])
+                 """
+                 try:
+                    await msg.edit(suppress=True)
+                 except:
+                    print('沒有關閉embed的權限')
+                 """
+             except AttributeError:  #plurk沒圖片
+                 print("image url not found")
+                 pass
+         else:
+             print("plurk not found")
+             pass
+            
    def pixive(self,strf):
       r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'})
       soup = BeautifulSoup(r.text, 'html.parser')
@@ -124,9 +169,7 @@ class Event(Cog_Extension):
 
       jdata=json.loads(str1)
       return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['pageCount']
-
-
-
+      
 
 def setup(bot):
    bot.add_cog(Event(bot))
