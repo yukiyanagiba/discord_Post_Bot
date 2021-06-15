@@ -147,7 +147,13 @@ class Event(Cog_Extension):
             if len(status.extended_entities['media'])==1:
                try:
                   twitterMedia=status.extended_entities['media'][0]['video_info']
-                  await msg.channel.send(twitterMedia['variants'][0]['url'])
+                  bitrate = 0
+                  maxIndex = 0
+                  for index in range(len(twitterMedia['variants'])):
+                    if twitterMedia['variants'][index]['content_type'] == "video/mp4" and twitterMedia['variants'][index]['bitrate'] > bitrate:
+                        bitrate = twitterMedia['variants'][index]['bitrate']
+                        maxIndex = index
+                  await msg.channel.send(twitterMedia['variants'][maxIndex]['url'])
                except KeyError:  #twitter沒影片
                   pass
                   
