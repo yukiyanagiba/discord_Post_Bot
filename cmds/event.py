@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 import tweepy
 import random
+import codecs
 
 from bs4 import BeautifulSoup
 
@@ -23,6 +24,9 @@ class Event(Cog_Extension):
    p5=re.compile('t\.co\/')
    #以下plurk
    p6=re.compile('www\.plurk\.com\/p')
+   #以下eh
+   p7=re.compile('e-hentai\.org\/g\/')
+   p8=re.compile('exhentai\.org\/g\/')
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
@@ -204,6 +208,59 @@ class Event(Cog_Extension):
          else:
              print("plurk not found")
              pass
+      #以下eh
+      a=self.p7.search(msg.content)
+      if a==None:
+         a=self.p8.search(msg.content)
+      if a!=None:
+        try:
+            urlstring = re.search("(?P<url>https?://e-hentai.org/g/[\d]+/[a-z0-9]+)", msg.content).group("url")
+        except:
+            urlstring = re.search("(?P<url>https?://exhentai.org/g/[\d]+/[a-z0-9]+)", msg.content).group("url")
+        if urlstring[-1] == "/":
+            gallery_id = urlstring.split("/")[-3]
+            gallery_token = urlstring.split("/")[-2]
+        else:
+            gallery_id = urlstring.split("/")[-2]
+            gallery_token = urlstring.split("/")[-1]
+        eh_headers = {
+         'user-agent': self.USER_AGENT,
+         'ipb_member_id': self.jdata['eh_ipb_member_id'],
+         'ipb_pass_hash': self.jdata['eh_ipb_pass_hash']
+        }
+        eh_api_url = "https://api.e-hentai.org/api.php"
+        data_set = {
+          "method": "gdata",
+          "gidlist": [
+              [gallery_id,gallery_token]
+          ],
+          "namespace": 1
+        }
+        json_input = json.dumps(data_set)
+        resp = requests.post(eh_api_url, headers=eh_headers, data=json_input)
+        json_ret = resp.json()
+        try:
+            msg_ret = ""
+            rating = int(float(json_ret['gmetadata'][0]['rating']))
+            for i in range(rating):
+                msg_ret += "★"
+            await msg.channel.send(msg_ret)
+            try:
+                title = json_ret['gmetadata'][0]['title_jpn']
+            except:
+                title = json_ret['gmetadata'][0]['title']         
+            thumb = json_ret['gmetadata'][0]['thumb']
+            colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+            embed=discord.Embed(title=title,url=urlstring, color=colonn)
+            embed.set_image(url=thumb)
+            await msg.channel.send(embed=embed)
+            try:
+               await msg.edit(suppress=True)
+            except:
+               print('沒有關閉embed的權限')
+        except:
+            print("Gallery not found")
+            pass
             
    def pixive(self,strf):
       r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = self.headers)
