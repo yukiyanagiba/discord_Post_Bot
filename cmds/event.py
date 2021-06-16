@@ -1,3 +1,4 @@
+import datetime
 import discord
 from discord.ext import commands
 from core.classes import Cog_Extension
@@ -12,7 +13,22 @@ import codecs
 
 from bs4 import BeautifulSoup
 
+import ehapi
 
+BASE = "https://cdn.discordapp.com/attachments/306823976615936002/"
+G_CATEGORY = {
+    "Doujinshi": BASE + "471642768180117524/doujinshi.png",
+    "Manga": BASE + "471642771862716446/manga.png",
+    "Artist CG": BASE + "471642764623478804/artistcg.png",
+    "Game CG": BASE + "471642769169842176/gamecg.png",
+    "Western": BASE + "471642775964745729/western.png",
+    "Non-H": BASE + "471642774350069771/non-h.png",
+    "Image Set": BASE + "471642770331926558/imageset.png",
+    "Cosplay": BASE + "471642766993260544/cosplay.png",
+    "Asian Porn": BASE + "471642765781106689/asianporn.png",
+    "Misc": BASE + "471642773087322112/misc.png"
+}
+EH_COLOUR = discord.Colour(0x660611)
 
 class Event(Cog_Extension):
    #以下pixiv
@@ -30,15 +46,6 @@ class Event(Cog_Extension):
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
-   #twitter oauth
-   auth = tweepy.OAuthHandler(jdata['consumer_key'], jdata['consumer_secret'])
-   auth.set_access_token(jdata['access_token'], jdata['access_token_secret'])
-   api = tweepy.API(auth)
-   
-   #plurk oauth
-   plurk = PlurkAPI(jdata['plurk_consumer_key'], jdata['plurk_consumer_secret'])
-   plurk.authorize(jdata['plurk_access_token'], jdata['plurk_access_token_secret'])
-
    # Random User Agent List
    USER_AGENT_LIST = [
         "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AcooBrowser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
@@ -105,7 +112,7 @@ class Event(Cog_Extension):
 
       if k and msg.author!=self.bot.user:
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-         uId,uName,illustTitle,illustComment,pageCount=self.pixive(strf)
+         uId,uName,illustTitle,illustComment,pageCount=pixive(strf)
          if pageCount>1:
             askpage = re.search('p\d{1,2}', msg.content[a.start():])
             allpage = re.search('all', msg.content[a.start():])
@@ -136,8 +143,13 @@ class Event(Cog_Extension):
       #以下twitter
       a=self.p4.search(msg.content)
       if a!=None:
+         #twitter oauth
+         auth = tweepy.OAuthHandler(self.jdata['consumer_key'], self.jdata['consumer_secret'])
+         auth.set_access_token(self.jdata['access_token'], self.jdata['access_token_secret'])
+         api = tweepy.API(auth)
+      
          strf = re.search('\d{15,20}', msg.content[a.start():]).group()
-         status = self.api.get_status(strf, tweet_mode="extended")
+         status = api.get_status(strf, tweet_mode="extended")
          try:
             twitterMedia=status.extended_entities['media']
             k=True
@@ -177,9 +189,13 @@ class Event(Cog_Extension):
       #以下plurk
       a=self.p6.search(msg.content)
       if a!=None:
+         #plurk oauth
+         plurk = PlurkAPI(self.jdata['plurk_consumer_key'], self.jdata['plurk_consumer_secret'])
+         plurk.authorize(self.jdata['plurk_access_token'], self.jdata['plurk_access_token_secret'])
+           
          url = re.search("(?P<url>https?://www.plurk.com/p/[^\s]{6})", msg.content).group("url")
          plurk_id = int((url.rsplit('/', 1)[-1]), 36)
-         json_object_string = self.plurk.callAPI('/APP/Timeline/getPlurk', options={'plurk_id': plurk_id})
+         json_object_string = plurk.callAPI('/APP/Timeline/getPlurk', options={'plurk_id': plurk_id})
          owner_id = json_object_string['plurk']['owner_id']
          nick_name = json_object_string['plurk_users'][str(owner_id)]['nick_name']
          if json_object_string:
@@ -219,65 +235,84 @@ class Event(Cog_Extension):
       if a==None:
          a=self.p8.search(msg.content)
       if a!=None:
-        try:
-            urlstring = re.search("(?P<url>https?://e-hentai.org/g/[\d]+/[a-z0-9]+)", msg.content).group("url")
-        except:
-            urlstring = re.search("(?P<url>https?://exhentai.org/g/[\d]+/[a-z0-9]+)", msg.content).group("url")
-        if urlstring[-1] == "/":
-            gallery_id = urlstring.split("/")[-3]
-            gallery_token = urlstring.split("/")[-2]
-        else:
-            gallery_id = urlstring.split("/")[-2]
-            gallery_token = urlstring.split("/")[-1]
-        eh_headers = {
-         'user-agent': self.USER_AGENT,
-         'ipb_member_id': self.jdata['eh_ipb_member_id'],
-         'ipb_pass_hash': self.jdata['eh_ipb_pass_hash']
-        }
-        eh_api_url = "https://api.e-hentai.org/api.php"
-        data_set = {
-          "method": "gdata",
-          "gidlist": [
-              [gallery_id,gallery_token]
-          ],
-          "namespace": 1
-        }
-        json_input = json.dumps(data_set)
-        resp = requests.post(eh_api_url, headers=eh_headers, data=json_input)
-        json_ret = resp.json()
-        try:
-            msg_ret = ""
-            rating = int(float(json_ret['gmetadata'][0]['rating']))
-            for i in range(rating):
-                msg_ret += "★"
-            await msg.channel.send(msg_ret)
-            try:
-                title = json_ret['gmetadata'][0]['title_jpn']
-            except:
-                title = json_ret['gmetadata'][0]['title']         
-            thumb = json_ret['gmetadata'][0]['thumb']
-            colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-            embed=discord.Embed(title=title,url=urlstring, color=colonn)
-            embed.set_image(url=thumb)
-            await msg.channel.send(embed=embed)
+            galleries = ehapi.get_galleries(msg.content)
+            if galleries:
+                if len(galleries) > 5:  # don't spam chat too much if user spams links
+                    await msg.channel.send(embed=embed_titles(galleries))
+                else:
+                    for gallery in galleries:
+                        await msg.channel.send(embed=embed_full(gallery))
             try:
                await msg.edit(suppress=True)
             except:
                print('沒有關閉embed的權限')
-        except:
-            print("Gallery not found")
-            pass
-            
-   def pixive(self,strf):
-      r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = self.headers)
-      soup = BeautifulSoup(r.text, 'html.parser')
-      content2=soup.find_all('meta')
-      str1=content2[25].get('content')
-      str1=str1.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
 
-      jdata=json.loads(str1)
-      return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['pageCount']
-      
+# get pixiv data            
+def pixive(self,strf):
+    r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = self.headers)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    content2=soup.find_all('meta')
+    str1=content2[25].get('content')
+    str1=str1.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
+
+    jdata=json.loads(str1)
+    return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['pageCount']
+
+# string of titles for lots of links
+def embed_titles(exmetas):
+    link_list = [create_markdown_url(exmeta['title'], create_ex_url(exmeta['gid'], exmeta['token'])) for exmeta in
+                 exmetas]
+    msg = "\n".join(link_list)
+    return discord.Embed(description=msg,
+                         colour=EH_COLOUR)
+
+
+# pretty discord embeds for small amount of links
+def embed_full(exmeta):
+    em = discord.Embed(title=BeautifulSoup(exmeta['title'], "html.parser").string,
+                       url=create_ex_url(exmeta['gid'], exmeta['token']),
+                       timestamp=datetime.datetime.utcfromtimestamp(int(exmeta['posted'])),
+                       description=BeautifulSoup(exmeta['title_jpn'], "html.parser").string,
+                       colour=EH_COLOUR)
+    em.set_image(url=exmeta['thumb'])
+    em.set_thumbnail(url=G_CATEGORY[exmeta['category']])
+    em.set_footer(text=exmeta['filecount'] + " pages")
+    em.add_field(name="rating", value=exmeta['rating'])
+    em = process_tags(em, exmeta['tags'])
+    return em
+
+
+# put our tags from the EH JSON response into the discord embed
+def process_tags(em, tags):
+    tag_dict = {'male': [], 'female': [], 'parody': [], 'character': [], 'misc': []}
+    for tag in tags:
+        if ":" in tag:
+            splitted = tag.split(":")
+            if splitted[0] in tag_dict:
+                tag_dict[splitted[0]].append(BeautifulSoup(splitted[1], "html.parser").string)
+        else:
+            tag_dict['misc'].append(tag)
+
+    def add_field(ex_tag):
+        if tag_dict[ex_tag]:
+            em.add_field(name=ex_tag, value=', '.join(tag_dict[ex_tag]))
+
+    add_field("male")
+    add_field("female")
+    add_field("parody")
+    add_field("character")
+    add_field("misc")
+    return em
+
+
+# make a markdown hyperlink
+def create_markdown_url(message, url):
+    return "[" + BeautifulSoup(message, "html.parser").string + "](" + url + ")"
+
+
+# make a EH url from it's gid and token
+def create_ex_url(gid, g_token):
+    return "https://exhentai.org/g/" + str(gid) + "/" + g_token + "/"    
 
 def setup(bot):
    bot.add_cog(Event(bot))
