@@ -112,7 +112,7 @@ class Event(Cog_Extension):
 
       if k and msg.author!=self.bot.user:
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-         uId,uName,illustTitle,illustComment,pageCount=pixive(strf)
+         uId,uName,illustTitle,illustComment,pageCount=self.pixive(strf)
          if pageCount>1:
             askpage = re.search('p\d{1,2}', msg.content[a.start():])
             allpage = re.search('all', msg.content[a.start():])
@@ -247,16 +247,16 @@ class Event(Cog_Extension):
             except:
                print('沒有關閉embed的權限')
 
-# get pixiv data            
-def pixive(self,strf):
-    r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = self.headers)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    content2=soup.find_all('meta')
-    str1=content2[25].get('content')
-    str1=str1.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
+   # get pixiv data            
+   def pixive(self,strf):
+        r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = self.headers)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        content2=soup.find_all('meta')
+        str1=content2[25].get('content')
+        str1=str1.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
 
-    jdata=json.loads(str1)
-    return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['pageCount']
+        jdata=json.loads(str1)
+        return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['pageCount']
 
 # string of titles for lots of links
 def embed_titles(exmetas):
