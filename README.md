@@ -36,4 +36,6 @@ https://twitter.com/author/status/123456789012345678980
 https://www.plurk.com/p/abcd12
 https://www.plurk.com/p/abcd12 all
 ```
-* EH/EX:    ☑ Gallery cover image thumb
+* EH/EX:    ☑ Gallery cover image thumb	
+* Yande:    ☑ Gallery sample image thumb	
+

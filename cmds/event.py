@@ -43,6 +43,9 @@ class Event(Cog_Extension):
    #以下eh
    p7=re.compile('e-hentai\.org\/g\/')
    p8=re.compile('exhentai\.org\/g\/')
+   #以下yande
+   p9=re.compile('yande\.re\/post\/show\/')
+   p10=re.compile('https:\/\/files\.yande\.re\/sample\/.*\.jpg')
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
@@ -246,6 +249,22 @@ class Event(Cog_Extension):
                await msg.edit(suppress=True)
             except:
                print('沒有關閉embed的權限')
+               
+      #以下yande
+      a=self.p9.search(msg.content)
+      if a!=None:
+        url = re.search('(?P<url>https?:\/\/yande\.re\/post\/show\/(\d+))', msg.content).group("url")
+        r =  requests.get(url,headers = self.headers)
+        image_url = self.p10.search(r.text).group(0)
+        print(image_url)
+        colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+        embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
+        embed.set_image(url=image_url)
+        await msg.channel.send(embed=embed)
+        try:
+            await msg.edit(suppress=True)
+        except:
+            print('沒有關閉embed的權限')
 
    # get pixiv data            
    def pixive(self,strf):
