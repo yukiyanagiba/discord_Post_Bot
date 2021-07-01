@@ -45,7 +45,7 @@ class Event(Cog_Extension):
    p8=re.compile('exhentai\.org\/g\/')
    #以下yande
    p9=re.compile('yande\.re\/post\/show\/')
-   p10=re.compile('https:\/\/files\.yande\.re\/sample\/.*\.jpg')
+   p10=re.compile('https:\/\/files\.yande\.re\/sample\/.*\.jpg","sample_width')
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
@@ -255,7 +255,7 @@ class Event(Cog_Extension):
       if a!=None:
         url = re.search('(?P<url>https?:\/\/yande\.re\/post\/show\/(\d+))', msg.content).group("url")
         r =  requests.get(url,headers = self.headers)
-        image_url = self.p10.search(r.text).group(0)
+        image_url = self.p10.search(r.text).group(0)[:-15]
         print(image_url)
         colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
         embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
