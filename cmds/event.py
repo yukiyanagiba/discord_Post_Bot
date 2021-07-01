@@ -255,16 +255,17 @@ class Event(Cog_Extension):
       if a!=None:
         url = re.search('(?P<url>https?:\/\/yande\.re\/post\/show\/(\d+))', msg.content).group("url")
         r =  requests.get(url,headers = self.headers)
-        image_url = self.p10.search(r.text).group(0)[:-15]
-        print(image_url)
-        colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-        embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
-        embed.set_image(url=image_url)
-        await msg.channel.send(embed=embed)
-        try:
-            await msg.edit(suppress=True)
-        except:
-            print('沒有關閉embed的權限')
+        if r.text.find("Rating: Explicit") != -1:
+            image_url = self.p10.search(r.text).group(0)[:-15]
+            print(image_url)
+            colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+            embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
+            embed.set_image(url=image_url)
+            await msg.channel.send(embed=embed)
+            try:
+                await msg.edit(suppress=True)
+            except:
+                print('沒有關閉embed的權限')
 
    # get pixiv data            
    def pixive(self,strf):
