@@ -117,8 +117,8 @@ class Event(Cog_Extension):
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
          uId,uName,illustTitle,illustComment,pageCount=self.pixive(strf)
          if pageCount>1:
-            askpage = re.search('p\d{1,2}', msg.content[a.start():])
-            allpage = re.search('all', msg.content[a.start():])
+            askpage = re.search('P\d{1,2}', msg.content[a.start():].upper())
+            allpage = re.search('ALL', msg.content[a.start():].upper())
             if askpage:
                if int(askpage.group()[1:])<pageCount+1:
                   askNum=int(askpage.group()[1:])
@@ -210,7 +210,7 @@ class Event(Cog_Extension):
                  embed.set_image(url=image_url)
                  embed.set_author(name=nick_name, url="https://www.plurk.com/"+nick_name)
                  await msg.channel.send(embed=embed)
-                 allpage = re.search('all', msg.content[a.start():])
+                 allpage = re.search('ALL', msg.content[a.start():].upper())
                  if allpage:
                     image_urls = re.findall("(?P<url>https?://images.plurk.com/(?!mx_)[^\s]+.(?:png|jpg|gif))", content_string, re.DOTALL)
                     image_urls_dedupe = []
@@ -276,7 +276,7 @@ class Event(Cog_Extension):
         str1=str1.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
 
         jdata=json.loads(str1)
-        return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['pageCount']
+        return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['userIllusts'][strf]['pageCount']
 
 # string of titles for lots of links
 def embed_titles(exmetas):
