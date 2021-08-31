@@ -93,8 +93,49 @@ class Event(Cog_Extension):
      'user-agent': USER_AGENT
    }
 
+   list_message_id=[]
+   list_emojiname=[]
+   list_roleassign=[]
+   list_badGuy=[]
+   roleAssign=True
+   badGuyAssign=True
+
    @commands.Cog.listener()
    async def on_raw_reaction_add(self,payload):
+      if not self.badGuyAssign:
+         pass
+      else:
+         with open('setting.json','r',encoding='utf8') as jfile:
+            jdata=json.load(jfile)
+         self.list_badGuy=[]
+         for i in range(len(jdata['badGuy'])):
+            self.list_badGuy.append(jdata['badGuy'][i]['member_id'])
+         self.badGuyAssign=False
+
+      if not self.roleAssign:
+         pass
+      else:
+         with open('setting.json','r',encoding='utf8') as jfile:
+            jdata=json.load(jfile)
+         self.list_message_id=[]
+         self.list_emojiname=[]
+         self.list_roleassign=[]
+         for i in range(len(jdata['emoji_role'])):
+            self.list_message_id.append(jdata['emoji_role'][i]['message_id'])
+            self.list_emojiname.append(jdata['emoji_role'][i]['emojiname'])
+            self.list_roleassign.append(jdata['emoji_role'][i]['roleassign'])
+         self.roleAssign=False
+
+      for i in range(len(self.list_message_id)):
+         if payload.message_id==self.list_message_id[i] and payload.emoji.name==self.list_emojiname[i]:
+            role = discord.utils.get(payload.member.guild.roles, name=self.list_roleassign[i])
+            if payload.member.id not in self.list_badGuy:
+               await payload.member.add_roles(role)
+               print(payload.member,self.list_roleassign[i])
+            else:
+               print(payload.member,"在黑名單")
+               break
+
       channel = await self.bot.fetch_channel(payload.channel_id)
       message = await channel.fetch_message(payload.message_id)
       url=""

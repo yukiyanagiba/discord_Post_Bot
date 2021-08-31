@@ -2,11 +2,12 @@ import discord
 from discord.ext import commands
 import json
 import os
+import re
 
 with open('setting.json','r',encoding='utf8') as jfile:
    jdata=json.load(jfile)
 
-bot =commands.Bot(command_prefix='[')
+bot =commands.Bot(command_prefix='!')
 
 for Filename in os.listdir('./cmds'):
    if Filename.endswith('.py'):
@@ -18,15 +19,10 @@ async def on_ready():
    channel=bot.get_channel(int(jdata['chatchannel']))
    #await channel.send("Bot is online 機器人已就位")
 
-
+#msg.content
 @bot.command()
 async def ping(ctx):
    await ctx.send(f'{round(bot.latency*1000)}(ms)')
-
-@bot.command()
-async def octuysup(ctx,extension):
-   bot.reload_extension(f'cmds.{extension}')
-   print('reload')
 
 #@bot.event
 #async def on_member_join(member):

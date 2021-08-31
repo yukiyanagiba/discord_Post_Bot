@@ -10,5 +10,17 @@
 	"plurk_access_token":"<PLURK_ACCESS_TOKEN>",
 	"plurk_access_token_secret":"<PLURK_ACCESS_TOKEN_SECRET>",
 	"eh_ipb_member_id":"<EH_MEMBER_ID>",
-	"eh_ipb_pass_hash":"<EH_PASS_HASH>"
+	"eh_ipb_pass_hash":"<EH_PASS_HASH>",
+    "emoji_role": [
+        {
+            "message_id": <MESSAGE_ID>,
+            "emojiname": "<EMOJI_NAME>",
+            "roleassign": "<ROLE_SIGN>"
+        }
+    ],
+    "badGuy": [
+        {
+            "member_id": <MEMBER_ID>
+        }
+    ]
 }
