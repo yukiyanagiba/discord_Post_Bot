@@ -16,6 +16,8 @@ for Filename in os.listdir('./cmds'):
 @bot.event
 async def on_ready():
    print("Bot is online 機器人已就位",discord.__version__)
+   print("Name: {}".format(bot.user.name))
+   print("ID: {}".format(bot.user.id))
    channel=bot.get_channel(int(jdata['chatchannel']))
    #await channel.send("Bot is online 機器人已就位")
 

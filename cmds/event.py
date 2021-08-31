@@ -139,7 +139,7 @@ class Event(Cog_Extension):
       channel = await self.bot.fetch_channel(payload.channel_id)
       message = await channel.fetch_message(payload.message_id)
       url=""
-      if message.author.id==840778992520658984 and payload.emoji.name=="idk":
+      if message.author.id==self.bot.user.id and payload.emoji.name=="idk":
          print(message.embeds)
          if message.embeds!=[]:
             url=message.embeds[0].image.url
