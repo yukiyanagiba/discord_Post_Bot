@@ -94,6 +94,36 @@ class Event(Cog_Extension):
    }
 
    @commands.Cog.listener()
+   async def on_raw_reaction_add(self,payload):
+      channel = await self.bot.fetch_channel(payload.channel_id)
+      message = await channel.fetch_message(payload.message_id)
+      url=""
+      if message.author.id==840778992520658984 and payload.emoji.name=="idk":
+         print(message.embeds)
+         if message.embeds!=[]:
+            url=message.embeds[0].image.url
+            p1=re.compile('\#')
+            a=p1.search(url)
+            if a==None:
+               url+="#1"
+            else:
+               num=int(url[a.start()+1:])+1
+               url=url[:a.start()]+"#"+str(num)
+            embed=message.embeds[0]
+            embed.set_image(url=url)
+            await message.edit(embed=embed)
+         else:
+            url=message.content
+            p1=re.compile('\#')
+            a=p1.search(url)
+            if a==None:
+               url+="#1"
+            else:
+               num=int(url[a.start()+1:])+1
+               url=url[:a.start()]+"#"+str(num)
+            await message.edit(content=url)
+
+   @commands.Cog.listener()
    async def on_message(self,msg):
       k=False
       chr={}
