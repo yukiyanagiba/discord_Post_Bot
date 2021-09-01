@@ -3,9 +3,19 @@ from discord.ext import commands
 import json
 import os
 import re
+import logging, sys
 
 with open('setting.json','r',encoding='utf8') as jfile:
    jdata=json.load(jfile)
+
+logger= logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(jdata['IMG_DIR']+'kentaiBot2.log', 'w', 'utf-8')
+formatter = logging.Formatter('[%(asctime)s] %(name)-12s: %(levelname)-8s %(message)s', '%Y/%m/%d %H:%M:%S')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+sys.stderr.write = logger.error
+sys.stdout.write = logger.info
 
 bot =commands.Bot(command_prefix='!')
 
