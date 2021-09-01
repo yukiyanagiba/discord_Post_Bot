@@ -1,19 +1,19 @@
+import os
 import datetime
 import discord
-from discord.ext import commands
-from core.classes import Cog_Extension
-from plurk_oauth import PlurkAPI
 import json,random
 import requests
 import re
-from pathlib import Path
 import tweepy
 import random
 import codecs
-
-from bs4 import BeautifulSoup
-
+import urllib.request
 import ehapi
+from discord.ext import commands
+from core.classes import Cog_Extension
+from plurk_oauth import PlurkAPI
+from pathlib import Path
+from bs4 import BeautifulSoup
 
 BASE = "https://cdn.discordapp.com/attachments/306823976615936002/"
 G_CATEGORY = {
@@ -172,6 +172,7 @@ class Event(Cog_Extension):
       askNum=1
       twitterMedia=None
       print(msg.author,msg.content)
+      #以下pixiv
       a=self.p1.search(msg.content)
       if a==None:
          a=self.p2.search(msg.content)
@@ -186,28 +187,33 @@ class Event(Cog_Extension):
 
       if k and msg.author!=self.bot.user:
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-         uId,uName,illustTitle,illustComment,pageCount=self.pixive(strf)
+         uId,uName,illustTitle,illustComment,pageCount,image_url=self.pixivMetadata(strf)
          if pageCount>1:
             askpage = re.search('P\d{1,2}', msg.content[a.start():].upper())
             allpage = re.search('ALL', msg.content[a.start():].upper())
             if askpage:
-               if int(askpage.group()[1:])<pageCount+1:
+               if int(askpage.group()[1:])>0 and int(askpage.group()[1:])<pageCount+1:
                   askNum=int(askpage.group()[1:])
+                  pageNum="_p"+str(askNum-1)
                   embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-                  embed.set_image(url="https://pixiv.cat/"+strf+"-"+str(askNum)+".jpg")
+                  image_url=self.pixivDL2URL(image_url.replace('_p0',pageNum))
+                  embed.set_image(url=image_url)
                   embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
                   await msg.channel.send(embed=embed)
             elif allpage:
-               for c in range(1,pageCount+1):
-                  await msg.channel.send("https://pixiv.cat/"+strf+"-"+str(c)+".jpg")
+               for page in range(1,pageCount+1):
+                    pageNum="_p"+str(page-1)
+                    await msg.channel.send(self.pixivDL2URL(image_url.replace('_p0',pageNum)))
             else:
                   embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-                  embed.set_image(url="https://pixiv.cat/"+strf+"-1.jpg")
+                  image_url=self.pixivDL2URL(image_url)
+                  embed.set_image(url=image_url)
                   embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
                   await msg.channel.send(embed=embed)
          else:
             embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-            embed.set_image(url="https://pixiv.cat/"+strf+".jpg")
+            image_url=self.pixivDL2URL(image_url)
+            embed.set_image(url=image_url)
             embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
             await msg.channel.send(embed=embed)
          try:
@@ -338,17 +344,46 @@ class Event(Cog_Extension):
             except:
                 print('沒有關閉embed的權限')
 
-   # get pixiv data            
-   def pixive(self,strf):
-        r =  requests.get("https://www.pixiv.net/artworks/"+strf,headers = self.headers)
+   # get pixiv data
+   def pixivMetadata(self,id):
+        r =  requests.get("https://www.pixiv.net/artworks/"+id,headers = self.headers)
         soup = BeautifulSoup(r.text, 'html.parser')
-        content2=soup.find_all('meta')
-        str1=content2[25].get('content')
-        str1=str1.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
+        meta=soup.find_all('meta')
+        content=meta[25].get('content')
+        content=content.replace('false','\"false\"').replace('true','\"true\"').replace('null','\"null\"')
 
-        jdata=json.loads(str1)
-        return jdata['illust'][strf]['userId'],jdata['illust'][strf]['userName'],jdata['illust'][strf]['illustTitle'],jdata['illust'][strf]['illustComment'],jdata['illust'][strf]['userIllusts'][strf]['pageCount']
-
+        jdata=json.loads(content)
+        
+        return jdata['illust'][id]['userId'],jdata['illust'][id]['userName'],jdata['illust'][id]['illustTitle'],jdata['illust'][id]['illustComment'],jdata['illust'][id]['userIllusts'][id]['pageCount'],jdata['illust'][id]['urls']['original']
+        
+   # download pixiv image and return image url on server
+   def pixivDL2URL(self,img_url):
+        IMG_DIR = self.jdata['IMG_DIR']
+        DOMAIN = self.jdata['DOMAIN']
+    
+        # Get image id and extension
+        img_id = img_url.rsplit('/', 1)[-1].split('_', 1)[0]
+        img_page = img_url.rsplit('/', 1)[-1].split('_', 1)[1].split('.',1)[0].split('_',1)[0]
+        img_path = os.path.join(IMG_DIR, img_id + "_" + img_page +".jpg")
+        
+        if not os.path.isfile(img_path):
+            # Create opener with pixiv referer
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('user-agent', self.USER_AGENT)]
+            opener.addheaders = [('referer','https://www.pixiv.net/')]
+            
+            urllib.request.install_opener(opener)
+            # Download image
+            urllib.request.urlretrieve(img_url, img_path)
+            
+            # Compress image with pngquant
+            command = "convert " + img_path + " " + img_path
+            os.system(command)
+        
+        domain_url = DOMAIN + img_id + "_" + img_page +".jpg"
+        print(domain_url)
+        return domain_url
+    
 # string of titles for lots of links
 def embed_titles(exmetas):
     link_list = [create_markdown_url(exmeta['title'], create_ex_url(exmeta['gid'], exmeta['token'])) for exmeta in
