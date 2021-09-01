@@ -188,7 +188,16 @@ class Event(Cog_Extension):
       if k and msg.author!=self.bot.user:
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
          uId,uName,illustTitle,illustComment,pageCount,image_url=self.pixivMetadata(strf)
-         if pageCount>1:
+         if "ugoira" in image_url:
+            embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+            image_url=self.pixivDLGIF2URL(image_url)
+            # pre-cache for server
+            requests.get(image_url,headers = self.headers)
+            requests.get(image_url,headers = self.headers)
+            embed.set_image(url=image_url)
+            embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+            await msg.channel.send(embed=embed)
+         elif pageCount>1:
             askpage = re.search('P\d{1,2}', msg.content[a.start():].upper())
             allpage = re.search('ALL', msg.content[a.start():].upper())
             if askpage:
@@ -381,6 +390,35 @@ class Event(Cog_Extension):
             os.system(command)
         
         domain_url = DOMAIN + img_id + "_" + img_page +".jpg"
+        print(domain_url)
+        return domain_url
+        
+   # download pixiv animate image by pixivutil and return image url on server
+   def pixivDLGIF2URL(self,img_url):
+        IMG_DIR = self.jdata['IMG_DIR']
+        DOMAIN = self.jdata['DOMAIN']
+    
+        # Get image id
+        img_id = img_url.rsplit('/', 1)[-1].split('_', 1)[0]
+        img_path = os.path.join(IMG_DIR, img_id + ".gif")
+        imgzip_path = os.path.join(IMG_DIR, img_id + ".zip")
+        
+        if not os.path.isfile(img_path):
+            # Create opener with pixiv referer
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('user-agent', self.USER_AGENT)]
+            opener.addheaders = [('referer','https://www.pixiv.net/')]
+            
+            urllib.request.install_opener(opener)
+            # Download image
+            imgzip_url = img_url.replace("/img-original/", "/img-zip-ugoira/").replace('_ugoira0.jpg','_ugoira600x600.zip')
+            urllib.request.urlretrieve(imgzip_url, imgzip_path)
+            
+            # Convert zip to gif with ffmpeg
+            command = "cd "+IMG_DIR+" && 7z x -o"+img_id+" "+img_id+".zip && rm "+img_id+".zip && gifgen -o "+img_id+".gif "+img_id+"/%06d.jpg && rm -rf "+img_id
+            os.system(command)
+        
+        domain_url = DOMAIN + img_id + ".gif"
         print(domain_url)
         return domain_url
     
