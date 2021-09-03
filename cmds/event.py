@@ -231,8 +231,8 @@ class Event(Cog_Extension):
             elif allpage:
                for page in range(1,pageCount+1):
                     pageNum="_p"+str(page-1)
-                    image_url=self.pixivDL2URL(image_url.replace('_p0',pageNum))
-                    await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+                    edit_image_url=self.pixivDL2URL(image_url.replace('img-master','img-original').replace('_p0',pageNum))
+                    await msg.channel.send(self.msgSendProcess(edit_image_url, isExplicit))
             else:
                   image_url=self.pixivDL2URL(image_url)
                   if isExplicit:
