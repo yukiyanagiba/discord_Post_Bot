@@ -49,6 +49,9 @@ class Event(Cog_Extension):
    #以下sankaku
    p11=re.compile('chan\.sankakucomplex\.com(\/ja)?\/post\/show\/\d+')
    p12=re.compile('\/\/(s|v)\.sankakucomplex\.com\/data\/sample\/.*\" property=og:image')
+   #以下ptt
+   p13=re.compile('www\.ptt\.cc\/bbs\/.*\.html')
+   p14=re.compile('ptthito\.com\/.*')
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
@@ -429,7 +432,27 @@ class Event(Cog_Extension):
                 print('沒有關閉embed的權限')
         except:
                 print('fetch fail')
-
+                
+      #以下ptt
+      a=self.p13.search(msg.content)
+      if a==None:
+         a=self.p14.search(msg.content)
+      if a!=None and not isExplicit:
+        # rewrite to moptt url
+        try:
+            url = re.search('(?P<url>https?:\/\/www\.ptt\.cc\/bbs\/.*\/.*\.html)', msg.content).group("url")
+            url = url.rsplit('/', 1)[0].replace("www.ptt.cc/bbs","moptt.tw/p") + "." + url.rsplit('/', 1)[1].replace(".html","")
+        except:
+            url = re.search('(?P<url>https?:\/\/ptthito\.com\/.*\/.*\/)', msg.content).group("url")
+            if url[-1:] == "/":
+                url = url[:-1]
+            url = url.rsplit('/', 1)[0].replace("ptthito.com","moptt.tw/p") + "." + url.rsplit('/', 1)[1].replace("-",".").upper()
+        await msg.channel.send(url)
+        try:
+            await msg.edit(suppress=True)
+        except:
+            print('沒有關閉embed的權限')
+            
    # post process msg content
    def msgSendProcess(self,str,flag):
         if not flag:
