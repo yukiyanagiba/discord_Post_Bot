@@ -46,6 +46,9 @@ class Event(Cog_Extension):
    #以下yande
    p9=re.compile('yande\.re\/post\/show\/')
    p10=re.compile('https:\/\/files\.yande\.re\/sample\/.*\.jpg","sample_width')
+   #以下sankaku
+   p11=re.compile('chan\.sankakucomplex\.com(\/ja)?\/post\/show\/\d+')
+   p12=re.compile('\/\/(s|v)\.sankakucomplex\.com\/data\/sample\/.*\" property=og:image')
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
@@ -404,6 +407,28 @@ class Event(Cog_Extension):
                 await msg.edit(suppress=True)
             except:
                 print('沒有關閉embed的權限')
+                
+      #以下sankaku
+      a=self.p11.search(msg.content)
+      if a!=None:
+        try:
+            url = re.search('(?P<url>https?:\/\/chan\.sankakucomplex\.com(\/ja)?\/post\/show\/(\d+))', msg.content).group("url")
+            r =  requests.get(url,headers={'user-agent': self.USER_AGENT, 'login': self.jdata['SANKAKU_ID'], 'pass_hash': self.jdata['SANKAKU_PASS_HASH'], 'PHPSESSID': self.jdata['SANKAKU_PHPSESSID']})
+            image_url = "https:" + self.p12.search(r.text).group(0)[:-19]
+            colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+            if isExplicit:
+                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+            else:
+                embed=discord.Embed(title='chan.sankakucomplex.com',url=image_url, color=colonn)
+                embed.set_image(url=image_url)
+                await msg.channel.send(embed=embed)
+            try:
+                if not isExplicit:
+                    await msg.edit(suppress=True)
+            except:
+                print('沒有關閉embed的權限')
+        except:
+                print('fetch fail')
 
    # post process msg content
    def msgSendProcess(self,str,flag):

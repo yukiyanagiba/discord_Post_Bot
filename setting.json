@@ -22,5 +22,10 @@
         {
             "member_id": <MEMBER_ID>
         }
-    ]
+    ],
+	"IMG_DIR": "<IMG_DIR>",
+	"DOMAIN": "<DOMAIN>",
+	"SANKAKU_ID": "<SANKAKU_ID>",
+	"SANKAKU_PASS_HASH": "<SANKAKU_PASS_HASH>",
+	"SANKAKU_PHPSESSID": "<SANKAKU_PHPSESSID>"
 }
