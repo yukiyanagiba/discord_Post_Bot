@@ -437,7 +437,7 @@ class Event(Cog_Extension):
       a=self.p13.search(msg.content)
       if a==None:
          a=self.p14.search(msg.content)
-      if a!=None and not isExplicit:
+      if a!=None:
         # rewrite to moptt url
         try:
             url = re.search('(?P<url>https?:\/\/www\.ptt\.cc\/bbs\/.*\/.*\.html)', msg.content).group("url")
@@ -447,7 +447,7 @@ class Event(Cog_Extension):
             if url[-1:] == "/":
                 url = url[:-1]
             url = url.rsplit('/', 1)[0].replace("ptthito.com","moptt.tw/p") + "." + url.rsplit('/', 1)[1].replace("-",".").upper()
-        await msg.channel.send(url)
+        await msg.channel.send(self.msgSendProcess(url, isExplicit))
         try:
             await msg.edit(suppress=True)
         except:
