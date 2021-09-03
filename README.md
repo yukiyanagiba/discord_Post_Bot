@@ -21,7 +21,7 @@ python bot.py
 ```
 
 ### Support websites:
-* Pixiv:    ☑ Single image ☑ Multiple images  ☑ Image for a specific page
+* Pixiv:    ☑ Single image ☑ Multiple images  ☑ Image for a specific page ☑ Ugoira image
 ```
 https://www.pixiv.net/artworks/12345678
 https://www.pixiv.net/artworks/12345678 p2
@@ -38,4 +38,6 @@ https://www.plurk.com/p/abcd12 all
 ```
 * EH/EX:    ☑ Gallery cover image thumb	
 * Yande:    ☑ Gallery sample image thumb	
+* Sankakucomplex:    ☑ Gallery sample image thumb	
+* PTT:    ☑ Post top image thumb	
 
