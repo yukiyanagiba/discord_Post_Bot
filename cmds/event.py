@@ -171,6 +171,13 @@ class Event(Cog_Extension):
       strf=''
       askNum=1
       twitterMedia=None
+      
+      isExplicit=False
+      # check message is explicit ?
+      if msg.content.count("||") == 2:
+        isExplicit=True
+        msg.content.replace("||","")
+        
       print(msg.author,msg.content)
       #以下pixiv
       a=self.p1.search(msg.content)
@@ -189,14 +196,17 @@ class Event(Cog_Extension):
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
          uId,uName,illustTitle,illustComment,pageCount,image_url=self.pixivMetadata(strf)
          if "ugoira" in image_url:
-            embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
             image_url=self.pixivDLGIF2URL(image_url)
             # pre-cache for server
             requests.get(image_url,headers = self.headers)
             requests.get(image_url,headers = self.headers)
-            embed.set_image(url=image_url)
-            embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
-            await msg.channel.send(embed=embed)
+            if isExplicit:
+                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+            else:
+                embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+                embed.set_image(url=image_url)
+                embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                await msg.channel.send(embed=embed)
          elif pageCount>1:
             askpage = re.search('P\d{1,2}', msg.content[a.start():].upper())
             allpage = re.search('ALL', msg.content[a.start():].upper())
@@ -204,29 +214,40 @@ class Event(Cog_Extension):
                if int(askpage.group()[1:])>0 and int(askpage.group()[1:])<pageCount+1:
                   askNum=int(askpage.group()[1:])
                   pageNum="_p"+str(askNum-1)
-                  embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
                   image_url=self.pixivDL2URL(image_url.replace('_p0',pageNum))
-                  embed.set_image(url=image_url)
-                  embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
-                  await msg.channel.send(embed=embed)
+                  if isExplicit:
+                      await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+                  else:
+                      embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+                      embed.set_image(url=image_url)
+                      embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                      await msg.channel.send(embed=embed)
             elif allpage:
                for page in range(1,pageCount+1):
                     pageNum="_p"+str(page-1)
-                    await msg.channel.send(self.pixivDL2URL(image_url.replace('_p0',pageNum)))
+                    image_url=self.pixivDL2URL(image_url.replace('_p0',pageNum))
+                    await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
             else:
-                  embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
                   image_url=self.pixivDL2URL(image_url)
-                  embed.set_image(url=image_url)
-                  embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
-                  await msg.channel.send(embed=embed)
+                  if isExplicit:
+                      await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+                  else:
+                      embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+                      embed.set_image(url=image_url)
+                      embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                      await msg.channel.send(embed=embed)
          else:
-            embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
             image_url=self.pixivDL2URL(image_url)
-            embed.set_image(url=image_url)
-            embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
-            await msg.channel.send(embed=embed)
+            if isExplicit:
+                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+            else:
+                embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
+                embed.set_image(url=image_url)
+                embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                await msg.channel.send(embed=embed)
          try:
-            await msg.edit(suppress=True)
+            if not isExplicit:
+                await msg.edit(suppress=True)
          except:
             print('沒有關閉embed的權限')
       #以下twitter
@@ -254,7 +275,7 @@ class Event(Cog_Extension):
                     if twitterMedia['variants'][index]['content_type'] == "video/mp4" and twitterMedia['variants'][index]['bitrate'] > bitrate:
                         bitrate = twitterMedia['variants'][index]['bitrate']
                         maxIndex = index
-                  await msg.channel.send(twitterMedia['variants'][maxIndex]['url'])
+                  await msg.channel.send(self.msgSendProcess(twitterMedia['variants'][maxIndex]['url'], isExplicit))
                except KeyError:  #twitter沒影片
                   pass
                   
@@ -265,14 +286,19 @@ class Event(Cog_Extension):
                illustTitle=status.full_text
                a=self.p5.search(illustTitle)
                illustTitle=illustTitle[:a.start()-9]
-               embed=discord.Embed(title=illustTitle,url="https://twitter.com/"+uId+"/status/"+strf, color=colonn)
-               embed.set_image(url=twitterMedia[0]['media_url_https'])
-               embed.set_author(name=uName, url="https://twitter.com/"+uId)
-               await msg.channel.send(embed=embed)
+               image_url=twitterMedia[0]['media_url_https']
+               if isExplicit:
+                   await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+               else:
+                   embed=discord.Embed(title=illustTitle,url="https://twitter.com/"+uId+"/status/"+strf, color=colonn)
+                   embed.set_image(url=image_url)
+                   embed.set_author(name=uName, url="https://twitter.com/"+uId)
+                   await msg.channel.send(embed=embed)
                for i in range(1,len(status.extended_entities['media'])):
-                  await msg.channel.send(twitterMedia[i]['media_url_https'])
+                  await msg.channel.send(self.msgSendProcess(twitterMedia[i]['media_url_https'], isExplicit))
                try:
-                  await msg.edit(suppress=True)
+                  if not isExplicit:
+                    await msg.edit(suppress=True)
                except:
                   print('沒有關閉embed的權限')
       #以下plurk
@@ -292,10 +318,13 @@ class Event(Cog_Extension):
              try:
                  image_url = re.search("(?P<url>https?://images.plurk.com/[^\s]+.(?:png|jpg|gif))", content_string).group("url")
                  colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-                 embed=discord.Embed(title='plurk',url=url, color=colonn)
-                 embed.set_image(url=image_url)
-                 embed.set_author(name=nick_name, url="https://www.plurk.com/"+nick_name)
-                 await msg.channel.send(embed=embed)
+                 if isExplicit:
+                     await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+                 else:
+                     embed=discord.Embed(title='plurk',url=url, color=colonn)
+                     embed.set_image(url=image_url)
+                     embed.set_author(name=nick_name, url="https://www.plurk.com/"+nick_name)
+                     await msg.channel.send(embed=embed)
                  allpage = re.search('ALL', msg.content[a.start():].upper())
                  if allpage:
                     image_urls = re.findall("(?P<url>https?://images.plurk.com/(?!mx_)[^\s]+.(?:png|jpg|gif))", content_string, re.DOTALL)
@@ -306,33 +335,54 @@ class Event(Cog_Extension):
                     list_len = len(image_urls_dedupe)
                     if list_len > 1:
                         for index in range(1, list_len):
-                            await msg.channel.send(image_urls_dedupe[index])
-                 """
-                 try:
-                    await msg.edit(suppress=True)
-                 except:
-                    print('沒有關閉embed的權限')
-                 """
+                            await msg.channel.send(self.msgSendProcess(image_urls_dedupe[index], isExplicit))
              except AttributeError:  #plurk沒圖片
                  print("image url not found")
-                 pass
          else:
              print("plurk not found")
-             pass
       #以下eh
       a=self.p7.search(msg.content)
+      ispage = 0
       if a==None:
          a=self.p8.search(msg.content)
+         if a==None:
+            a=ehapi.page_token.search(msg.content)
+            if a!=None:
+                ispage = 1
       if a!=None:
-            galleries = ehapi.get_galleries(msg.content)
-            if galleries:
-                if len(galleries) > 5:  # don't spam chat too much if user spams links
-                    await msg.channel.send(embed=embed_titles(galleries))
+            if isExplicit:
+                urlstring = re.search("(?P<url>https?://e(-|x)hentai.org/g/[\d]+/[a-z0-9]+)", msg.content).group("url")
+                if urlstring[-1] == "/":
+                    gallery_id = urlstring.split("/")[-3]
+                    gallery_token = urlstring.split("/")[-2]
                 else:
-                    for gallery in galleries:
-                        await msg.channel.send(embed=embed_full(gallery))
+                    gallery_id = urlstring.split("/")[-2]
+                    gallery_token = urlstring.split("/")[-1]
+                token_group = [[gallery_id,gallery_token]]
+                gmetadata = ehapi.api_gallery(token_group)
+                msg_ret = ""
+                rating = int(float(gmetadata[0]['rating']))
+                for i in range(rating):
+                    msg_ret += "★"
+                try:
+                    title = gmetadata[0]['title_jpn']
+                except:
+                    title = gmetadata[0]['title']
+                msg_ret = msg_ret + "\n" + title
+                await msg.channel.send(msg_ret)
+                image_url = gmetadata[0]['thumb']
+                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+            else:
+                galleries = ehapi.get_galleries(msg.content)
+                if galleries:
+                    if len(galleries) > 5:  # don't spam chat too much if user spams links
+                        await msg.channel.send(embed=embed_titles(galleries))
+                    else:
+                        for gallery in galleries:
+                            await msg.channel.send(embed=embed_full(gallery))
             try:
-               await msg.edit(suppress=True)
+                if not isExplicit:
+                    await msg.edit(suppress=True)
             except:
                print('沒有關閉embed的權限')
                
@@ -343,15 +393,24 @@ class Event(Cog_Extension):
         r =  requests.get(url,headers = self.headers)
         if r.text.find("Rating: Explicit") != -1:
             image_url = self.p10.search(r.text).group(0)[:-15]
-            print(image_url)
             colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-            embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
-            embed.set_image(url=image_url)
-            await msg.channel.send(embed=embed)
+            if isExplicit:
+                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+            else:
+                embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
+                embed.set_image(url=image_url)
+                await msg.channel.send(embed=embed)
             try:
                 await msg.edit(suppress=True)
             except:
                 print('沒有關閉embed的權限')
+
+   # post process msg content
+   def msgSendProcess(self,str,flag):
+        if not flag:
+            return str
+        else:
+            return "|| " + str + " ||"
 
    # get pixiv data
    def pixivMetadata(self,id):
