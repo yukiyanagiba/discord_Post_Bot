@@ -340,6 +340,7 @@ class Event(Cog_Extension):
          display_name = json_object_string['plurk_users'][str(owner_id)]['display_name']
          content_raw = json_object_string['plurk']['content_raw'].replace("\n\n","\n")
          description = re.sub("(?P<url>https?://images.plurk.com/[^\s]+\.(?:png|jpg|gif))", '', content_raw)
+         favorite_count = json_object_string['plurk']['favorite_count']
          response_count = json_object_string['plurk']['response_count']
          replurkers_count = json_object_string['plurk']['replurkers_count']
          posted = json_object_string['plurk']['posted']
@@ -350,8 +351,9 @@ class Event(Cog_Extension):
          embed.set_author(name=display_name+"(@"+nick_name+")", url="https://www.plurk.com/"+nick_name, icon_url=ICON_PLURK)
          embed.set_thumbnail(url="https://avatars.plurk.com/"+str(owner_id)+"-big"+str(avatar)+".jpg")
          embed.set_footer(text="Plurk ")
-         embed.add_field(name="回應數", value=response_count, inline=True)
-         embed.add_field(name="轉噗數", value=replurkers_count, inline=True)
+         embed.add_field(name="喜歡", value=favorite_count, inline=True)
+         embed.add_field(name="轉噗", value=replurkers_count, inline=True)
+         embed.add_field(name="回應", value=response_count, inline=True)
          embed.description = description
          if json_object_string:
              try:
