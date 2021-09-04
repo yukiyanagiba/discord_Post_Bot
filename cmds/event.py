@@ -252,6 +252,7 @@ class Event(Cog_Extension):
                 await msg.edit(suppress=True)
          except:
             print('沒有關閉embed的權限')
+            
       #以下twitter
       a=self.p4.search(msg.content)
       if a!=None:
@@ -268,39 +269,44 @@ class Event(Cog_Extension):
          except AttributeError:  #twitter沒圖片
             pass
          if k and msg.author!=self.bot.user:
-            if len(status.extended_entities['media'])==1:
-               try:
-                  twitterMedia=status.extended_entities['media'][0]['video_info']
-                  bitrate = 0
-                  maxIndex = 0
-                  for index in range(len(twitterMedia['variants'])):
+            try:
+                twitterMedia=status.extended_entities['media'][0]['video_info']
+                bitrate = 0
+                maxIndex = 0
+                for index in range(len(twitterMedia['variants'])):
                     if twitterMedia['variants'][index]['content_type'] == "video/mp4" and twitterMedia['variants'][index]['bitrate'] > bitrate:
                         bitrate = twitterMedia['variants'][index]['bitrate']
                         maxIndex = index
-                  await msg.channel.send(self.msgSendProcess(twitterMedia['variants'][maxIndex]['url'], isExplicit))
-               except KeyError:  #twitter沒影片
-                  pass
-                  
-            else:
+                await msg.channel.send(self.msgSendProcess(twitterMedia['variants'][maxIndex]['url'], isExplicit))
+            except KeyError:  #twitter沒影片
                colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
                uId=status.user.screen_name
                uName=status.user.name
-               illustTitle=status.full_text
-               a=self.p5.search(illustTitle)
-               illustTitle=illustTitle[:a.start()-9]
+               timestamp=status.created_at
+               retweet_count=status.retweet_count
+               favorite_count=status.favorite_count
+               tweet_link=status.extended_entities['media'][0]['url']
+               description=status.full_text.replace(tweet_link,'')
                image_url=twitterMedia[0]['media_url_https']
+               imageProfile_url = status.user.profile_image_url_https.replace('_normal','_400x400')
+               
+               embed=discord.Embed(title='',url="https://twitter.com/"+uId+"/status/"+strf, color=colonn, timestamp=timestamp)
+               embed.set_author(name=uName+"(@"+uId+")", url="https://twitter.com/"+uId, icon_url=ICON_TWITTER)
+               embed.add_field(name="Retweets", value=retweet_count, inline=True)
+               embed.add_field(name="Likes", value=favorite_count, inline=True)
+               embed.description = description
+               embed.set_thumbnail(url=imageProfile_url)
+               embed.set_footer(text="Twitter ")
                if isExplicit:
+                   await msg.channel.send(embed=embed)
                    await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
                else:
-                   embed=discord.Embed(title=illustTitle,url="https://twitter.com/"+uId+"/status/"+strf, color=colonn)
                    embed.set_image(url=image_url)
-                   embed.set_author(name=uName, url="https://twitter.com/"+uId)
                    await msg.channel.send(embed=embed)
                for i in range(1,len(status.extended_entities['media'])):
                   await msg.channel.send(self.msgSendProcess(twitterMedia[i]['media_url_https'], isExplicit))
                try:
-                  if not isExplicit:
-                    await msg.edit(suppress=True)
+                  await msg.edit(suppress=True)
                except:
                   print('沒有關閉embed的權限')
                   
