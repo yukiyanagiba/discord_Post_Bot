@@ -303,45 +303,69 @@ class Event(Cog_Extension):
                     await msg.edit(suppress=True)
                except:
                   print('沒有關閉embed的權限')
+                  
       #以下plurk
       a=self.p6.search(msg.content)
       if a!=None:
-         #plurk oauth
-         plurk = PlurkAPI(self.jdata['plurk_consumer_key'], self.jdata['plurk_consumer_secret'])
-         plurk.authorize(self.jdata['plurk_access_token'], self.jdata['plurk_access_token_secret'])
-           
+         # plurk info
          url = re.search("(?P<url>https?://www.plurk.com/p/[^\s]{6})", msg.content).group("url")
          plurk_id = int((url.rsplit('/', 1)[-1]), 36)
-         json_object_string = plurk.callAPI('/APP/Timeline/getPlurk', options={'plurk_id': plurk_id})
+         plurk_image_format = re.compile("(?P<url>https?://images.plurk.com/[^\s]+.(?:png|jpg|gif))")
+         
+         # plurk oauth
+         plurk = PlurkAPI(self.jdata['plurk_consumer_key'], self.jdata['plurk_consumer_secret'])
+         plurk.authorize(self.jdata['plurk_access_token'], self.jdata['plurk_access_token_secret'])
+         json_object_string = plurk.callAPI('/APP/Timeline/getPlurk', options={'plurk_id': plurk_id})        
+
          owner_id = json_object_string['plurk']['owner_id']
          nick_name = json_object_string['plurk_users'][str(owner_id)]['nick_name']
+         avatar = json_object_string['plurk_users'][str(owner_id)]['avatar']
+         display_name = json_object_string['plurk_users'][str(owner_id)]['display_name']
+         content_raw = json_object_string['plurk']['content_raw'].replace("\n\n","\n")
+         description = re.sub("(?P<url>https?://images.plurk.com/[^\s]+\.(?:png|jpg|gif))", '', content_raw)
+         response_count = json_object_string['plurk']['response_count']
+         replurkers_count = json_object_string['plurk']['replurkers_count']
+         posted = json_object_string['plurk']['posted']
+         timestamp = datetime.datetime.strptime(posted, '%a, %d %b %Y %H:%M:%S %Z')
+         
+         colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+         embed=discord.Embed(title='', color=colonn, timestamp=timestamp)
+         embed.set_author(name=display_name+"(@"+nick_name+")", url="https://www.plurk.com/"+nick_name, icon_url=ICON_PLURK)
+         embed.set_thumbnail(url="https://avatars.plurk.com/"+str(owner_id)+"-big"+str(avatar)+".jpg")
+         embed.set_footer(text="Plurk ")
+         embed.add_field(name="回應數", value=response_count, inline=True)
+         embed.add_field(name="轉噗數", value=replurkers_count, inline=True)
+         embed.description = description
          if json_object_string:
-             content_string = json_object_string['plurk']['content']
              try:
-                 image_url = re.search("(?P<url>https?://images.plurk.com/[^\s]+.(?:png|jpg|gif))", content_string).group("url")
-                 colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-                 if isExplicit:
-                     await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
-                 else:
-                     embed=discord.Embed(title='plurk',url=url, color=colonn)
-                     embed.set_image(url=image_url)
-                     embed.set_author(name=nick_name, url="https://www.plurk.com/"+nick_name)
-                     await msg.channel.send(embed=embed)
+                 image_url = re.search(plurk_image_format, content_raw).group("url")
+                 if image_url:
+                     if isExplicit:
+                         await msg.channel.send(embed=embed)
+                         await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+                     else:
+                         embed.set_image(url=image_url)
+                         await msg.channel.send(embed=embed)
                  allpage = re.search('ALL', msg.content[a.start():].upper())
                  if allpage:
-                    image_urls = re.findall("(?P<url>https?://images.plurk.com/(?!mx_)[^\s]+.(?:png|jpg|gif))", content_string, re.DOTALL)
+                    image_urls = re.findall("(?P<url>https?://images.plurk.com/(?!mx_)[^\s]+.(?:png|jpg|gif))", content_raw, re.DOTALL)
                     image_urls_dedupe = []
                     for index in range(len(image_urls)):
                         if image_urls[index] not in image_urls_dedupe:
                             image_urls_dedupe.append(image_urls[index])
                     list_len = len(image_urls_dedupe)
-                    if list_len > 1:
-                        for index in range(1, list_len):
+                    for index in range(1,list_len):
                             await msg.channel.send(self.msgSendProcess(image_urls_dedupe[index], isExplicit))
              except AttributeError:  #plurk沒圖片
-                 print("image url not found")
+                 await msg.channel.send(embed=embed)
+                 
+             try:
+                  await msg.edit(suppress=True)
+             except:
+                  print('沒有關閉embed的權限')
          else:
              print("plurk not found")
+             
       #以下eh
       a=self.p7.search(msg.content)
       ispage = 0
