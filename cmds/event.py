@@ -410,6 +410,8 @@ class Event(Cog_Extension):
             else:
                 embed=discord.Embed(title='yande.re',url=image_url, color=colonn)
                 embed.set_image(url=image_url)
+                embed.set_thumbnail(url=ICON_YANDE)
+                embed.set_footer(text="yande.re ")
                 await msg.channel.send(embed=embed)
             try:
                 await msg.edit(suppress=True)
