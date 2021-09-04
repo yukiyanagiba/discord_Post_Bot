@@ -15,6 +15,12 @@ from plurk_oauth import PlurkAPI
 from pathlib import Path
 from bs4 import BeautifulSoup
 
+ICON_PIXIV = "https://cdn.discordapp.com/attachments/881168385507999798/883280819085520916/pixiv.png"
+ICON_TWITTER = "https://cdn.discordapp.com/attachments/881168385507999798/883411224426070086/pngegg.png"
+ICON_PLURK = "https://cdn.discordapp.com/attachments/881168385507999798/883280952510525500/plurk.jpg"
+ICON_YANDE = "https://cdn.discordapp.com/attachments/881168385507999798/883285343107960842/yande.jpg"
+ICON_SANKAKU = "https://cdn.discordapp.com/attachments/881168385507999798/883280516676202556/sankaku.png"
+
 BASE = "https://cdn.discordapp.com/attachments/306823976615936002/"
 G_CATEGORY = {
     "Doujinshi": BASE + "471642768180117524/doujinshi.png",
