@@ -45,6 +45,9 @@ class Event(Cog_Extension):
    #以下ptt
    p13=re.compile('www\.ptt\.cc\/bbs\/.*\.html')
    p14=re.compile('ptthito\.com\/.*')
+   #以下melonbooks
+   p15=re.compile('www\.melonbooks\.co\.jp\/detail\/detail\.php\?product_id=\d+')
+   
    with open('setting.json','r',encoding='utf8') as jfile:
       jdata=json.load(jfile)
    
