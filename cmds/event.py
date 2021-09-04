@@ -14,12 +14,14 @@ from core.classes import Cog_Extension
 from plurk_oauth import PlurkAPI
 from pathlib import Path
 from bs4 import BeautifulSoup
+from lxml import html
 
 ICON_PIXIV = "https://cdn.discordapp.com/attachments/881168385507999798/883280819085520916/pixiv.png"
 ICON_TWITTER = "https://cdn.discordapp.com/attachments/881168385507999798/883411224426070086/pngegg.png"
 ICON_PLURK = "https://cdn.discordapp.com/attachments/881168385507999798/883280952510525500/plurk.jpg"
 ICON_YANDE = "https://cdn.discordapp.com/attachments/881168385507999798/883285343107960842/yande.jpg"
 ICON_SANKAKU = "https://cdn.discordapp.com/attachments/881168385507999798/883280516676202556/sankaku.png"
+ICON_MELONBOOKS = "https://cdn.discordapp.com/attachments/881168385507999798/883264713159499796/melonbooks.png"
 
 class Event(Cog_Extension):
    #以下pixiv
@@ -423,12 +425,73 @@ class Event(Cog_Extension):
         except:
             print('沒有關閉embed的權限')
             
+      #以下melonbooks
+      a=self.p15.search(msg.content)
+      if a!=None:
+            url = re.search('(?P<url>https?:\/\/www\.melonbooks\.co\.jp\/detail\/detail.php\?product_id=\d+)', msg.content).group("url")
+            image_url,title,circle,author,release_date,type,page,description,age = self.melonbooksMetadata(url)
+            colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
+            embed=discord.Embed(title=title,url=url, color=colonn)
+            embed.set_author(name=author+" ("+circle+")", url="https://www.melonbooks.co.jp/search/search.php?name="+author+"&text_type=author")
+            embed.set_footer(text=page + " pages")
+            embed.add_field(name="発行日", value=release_date, inline=True)
+            embed.add_field(name="ジャンル", value=type, inline=True)
+            embed.add_field(name="作品種別", value=age, inline=True)
+            embed.set_thumbnail(url=ICON_MELONBOOKS)
+            embed.description = description
+            if isExplicit:
+                await msg.channel.send(embed=embed)
+                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+            else:
+                embed.set_image(url=image_url)
+                await msg.channel.send(embed=embed)
+            try:
+                await msg.edit(suppress=True)
+            except:
+                print('沒有關閉embed的權限')
+            
    # post process msg content
    def msgSendProcess(self,str,flag):
         if not flag:
             return str
         else:
             return "|| " + str + " ||"
+
+   # get melonbooks metadata
+   def melonbooksMetadata(self,url):
+        R_COOKIE = {'AUTH_ADULT': '1'}
+        requests.adapters.DEFAULT_RETRIES = 5
+        s = requests.session()
+        s.keep_alive = False
+        r = s.get(url, allow_redirects=False, cookies=R_COOKIE, headers=self.headers)
+        if r.status_code != 200:
+            print("Connect failed")
+        else:
+            tree = html.fromstring(r.content)
+            image_url = tree.xpath('//meta[@property="og:image"]/@content')[0].split('&',1)[0]
+            title = tree.xpath('//meta[@property="og:title"]/@content')[0].rsplit("（",1)[0]
+            circle = tree.xpath('//meta[@property="og:title"]/@content')[0].rsplit("（",1)[1].rsplit("）",1)[0]
+            description = ''.join(tree.xpath('//*[@style="padding:5px;border:1px dotted #ccc;"]/text()')).replace(" ", "")
+            age = tree.xpath('//*[@class="stripe"]/tr/th[contains(text(), "作品種別")]/../td/text()')[0]
+            # Some works without following attribute
+            try:
+                type = tree.xpath('//*[@class="stripe"]/tr/th[contains(text(), "ジャンル")]/../td/a/text()')[0]
+            except:
+                type = "N/A"
+            try:
+                release_date = tree.xpath('//*[@class="stripe"]/tr/th[contains(text(), "発行日")]/../td/text()')[0]
+            except:
+                release_date = "N/A"
+            try:
+                author = tree.xpath('//*[@class="stripe"]/tr/th[contains(text(), "作家名")]/../td/a/text()')[0]
+            except:
+                author = ""
+            try:
+                page = tree.xpath('//*[@class="stripe"]/tr/th[contains(text(), "総ページ数・CG数・曲数")]/../td/text()')[0]
+            except:
+                page = "N/A"
+            
+            return image_url,title,circle,author,release_date,type,page,description,age
 
    # get pixiv data
    def pixivMetadata(self,id):
