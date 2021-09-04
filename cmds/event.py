@@ -196,18 +196,25 @@ class Event(Cog_Extension):
 
       if k and msg.author!=self.bot.user:
          colonn = random.randint(0,255)*65536+random.randint(0,255)*256+random.randint(0,255)
-         uId,uName,illustTitle,illustComment,pageCount,image_url=self.pixivMetadata(strf)
+         uId,uName,illustTitle,illustComment,pageCount,image_url,imageProfile_url,description,timestamp = self.pixivMetadata(strf)
+         embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn, timestamp=timestamp)
+         embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId, icon_url=ICON_PIXIV)
+         embed.add_field(name="Author", value="["+uName+"]("+"https://www.pixiv.net/users/"+uId+")", inline=True)
+         embed.add_field(name="Illust ID", value="["+strf+"]("+"https://www.pixiv.net/artworks/"+strf+")", inline=True)
+         embed.description = description
+         embed.set_footer(text="Pixiv ")
          if "ugoira" in image_url:
-            image_url=self.pixivDLGIF2URL(image_url)
+            image_url, edit_imageProfile_url = self.pixivDLGIF2URL(uId,image_url,imageProfile_url)
             # pre-cache for server
             requests.get(image_url,headers = self.headers)
             requests.get(image_url,headers = self.headers)
             if isExplicit:
+                embed.set_thumbnail(url=edit_imageProfile_url)
+                await msg.channel.send(embed=embed)
                 await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
             else:
-                embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
                 embed.set_image(url=image_url)
-                embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                embed.set_thumbnail(url=edit_imageProfile_url)
                 await msg.channel.send(embed=embed)
          elif pageCount>1:
             askpage = re.search('P\d{1,2}', msg.content[a.start():].upper())
@@ -216,40 +223,44 @@ class Event(Cog_Extension):
                if int(askpage.group()[1:])>0 and int(askpage.group()[1:])<pageCount+1:
                   askNum=int(askpage.group()[1:])
                   pageNum="_p"+str(askNum-1)
-                  image_url=self.pixivDL2URL(image_url.replace('_p0',pageNum))
+                  edit_image_url, edit_imageProfile_url = self.pixivDL2URL(uId,image_url.replace('_p0',pageNum),imageProfile_url)
                   if isExplicit:
-                      await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
-                  else:
-                      embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-                      embed.set_image(url=image_url)
-                      embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                      embed.set_thumbnail(url=edit_imageProfile_url)
                       await msg.channel.send(embed=embed)
-            elif allpage:
-               for page in range(1,pageCount+1):
+                      await msg.channel.send(self.msgSendProcess(edit_image_url, isExplicit))
+                  else:
+                      embed.set_image(url=edit_image_url)
+                      embed.set_thumbnail(url=edit_imageProfile_url)
+                      await msg.channel.send(embed=embed)
+                      
+            if not askpage:
+                edit_image_url, edit_imageProfile_url = self.pixivDL2URL(uId,image_url,imageProfile_url)
+                if isExplicit:
+                      embed.set_thumbnail(url=edit_imageProfile_url)
+                      await msg.channel.send(embed=embed)
+                      await msg.channel.send(self.msgSendProcess(edit_image_url, isExplicit))
+                else:
+                      embed.set_image(url=edit_image_url)
+                      embed.set_thumbnail(url=edit_imageProfile_url)
+                      await msg.channel.send(embed=embed)
+                  
+            if allpage:
+               for page in range(2,pageCount+1):
                     pageNum="_p"+str(page-1)
-                    edit_image_url=self.pixivDL2URL(image_url.replace('img-master','img-original').replace('_p0',pageNum))
+                    edit_image_url, edit_imageProfile_url = self.pixivDL2URL(uId,image_url.replace('img-master','img-original').replace('_p0',pageNum),imageProfile_url)
                     await msg.channel.send(self.msgSendProcess(edit_image_url, isExplicit))
-            else:
-                  image_url=self.pixivDL2URL(image_url)
-                  if isExplicit:
-                      await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
-                  else:
-                      embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-                      embed.set_image(url=image_url)
-                      embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
-                      await msg.channel.send(embed=embed)
          else:
-            image_url=self.pixivDL2URL(image_url)
+            edit_image_url, edit_imageProfile_url = self.pixivDL2URL(uId,image_url,imageProfile_url)
             if isExplicit:
-                await msg.channel.send(self.msgSendProcess(image_url, isExplicit))
+                embed.set_thumbnail(url=edit_imageProfile_url)
+                await msg.channel.send(embed=embed)
+                await msg.channel.send(self.msgSendProcess(edit_image_url, isExplicit))
             else:
-                embed=discord.Embed(title=illustTitle,url="https://www.pixiv.net/artworks/"+strf, color=colonn)
-                embed.set_image(url=image_url)
-                embed.set_author(name=uName, url="https://www.pixiv.net/users/"+uId)
+                embed.set_image(url=edit_image_url)
+                embed.set_thumbnail(url=edit_imageProfile_url)
                 await msg.channel.send(embed=embed)
          try:
-            if not isExplicit:
-                await msg.edit(suppress=True)
+            await msg.edit(suppress=True)
          except:
             print('沒有關閉embed的權限')
             
@@ -488,8 +499,8 @@ class Event(Cog_Extension):
                 print('沒有關閉embed的權限')
             
    # post process msg content
-   def msgSendProcess(self,str,flag):
-        if not flag:
+   def msgSendProcess(self,str,isExplicit):
+        if not isExplicit:
             return str
         else:
             return "|| " + str + " ||"
@@ -530,7 +541,7 @@ class Event(Cog_Extension):
             
             return image_url,title,circle,author,release_date,type,page,description,age
 
-   # get pixiv data
+   # get pixiv metadata
    def pixivMetadata(self,id):
         r =  requests.get("https://www.pixiv.net/artworks/"+id,headers = self.headers)
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -540,10 +551,20 @@ class Event(Cog_Extension):
 
         jdata=json.loads(content)
         
-        return jdata['illust'][id]['userId'],jdata['illust'][id]['userName'],jdata['illust'][id]['illustTitle'],jdata['illust'][id]['illustComment'],jdata['illust'][id]['userIllusts'][id]['pageCount'],jdata['illust'][id]['urls']['original']
+        uId = jdata['illust'][id]['userId']
+        uName = jdata['illust'][id]['userName']
+        illustTitle = jdata['illust'][id]['illustTitle']
+        illustComment = jdata['illust'][id]['illustComment']
+        pageCount = jdata['illust'][id]['userIllusts'][id]['pageCount']
+        image_url = jdata['illust'][id]['urls']['original']
+        imageProfile_url = jdata['user'][uId]['imageBig']
+        description = self.cleanhtml(jdata['illust'][id]['description'].replace("<br />","\n"))
+        timestamp = datetime.datetime.strptime(jdata['illust'][id]['createDate'], '%Y-%m-%dT%H:%M:%S%z')
+        
+        return uId,uName,illustTitle,illustComment,pageCount,image_url,imageProfile_url,description,timestamp
         
    # download pixiv image and return image url on server
-   def pixivDL2URL(self,img_url):
+   def pixivDL2URL(self,uId,img_url,imageProfile_url):
         IMG_DIR = self.jdata['IMG_DIR']
         DOMAIN = self.jdata['DOMAIN']
     
@@ -551,14 +572,21 @@ class Event(Cog_Extension):
         img_id = img_url.rsplit('/', 1)[-1].split('_', 1)[0]
         img_page = img_url.rsplit('/', 1)[-1].split('_', 1)[1].split('.',1)[0].split('_',1)[0]
         img_path = os.path.join(IMG_DIR, img_id + "_" + img_page +".jpg")
+        imgProfile_path = os.path.join(IMG_DIR, uId + "_profile.jpg")
+
+        # Create opener with pixiv referer
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('user-agent', self.USER_AGENT)]
+        opener.addheaders = [('referer','https://www.pixiv.net/')]
+        urllib.request.install_opener(opener)
+
+        # Check profile image does exist ?
+        if not os.path.isfile(imgProfile_path):
+            # Download profile image
+            urllib.request.urlretrieve(imageProfile_url, imgProfile_path)
         
+        # Check image does exist ?
         if not os.path.isfile(img_path):
-            # Create opener with pixiv referer
-            opener = urllib.request.build_opener()
-            opener.addheaders = [('user-agent', self.USER_AGENT)]
-            opener.addheaders = [('referer','https://www.pixiv.net/')]
-            
-            urllib.request.install_opener(opener)
             # Download image
             urllib.request.urlretrieve(img_url, img_path)
             
@@ -568,10 +596,12 @@ class Event(Cog_Extension):
         
         domain_url = DOMAIN + img_id + "_" + img_page +".jpg"
         print(domain_url)
-        return domain_url
+        domain_imageProfile_url = DOMAIN + uId + "_profile.jpg"
+        print(domain_imageProfile_url)
+        return domain_url, domain_imageProfile_url
         
    # download pixiv animate image by pixivutil and return image url on server
-   def pixivDLGIF2URL(self,img_url):
+   def pixivDLGIF2URL(self,uId,img_url,imageProfile_url):
         IMG_DIR = self.jdata['IMG_DIR']
         DOMAIN = self.jdata['DOMAIN']
     
@@ -579,14 +609,21 @@ class Event(Cog_Extension):
         img_id = img_url.rsplit('/', 1)[-1].split('_', 1)[0]
         img_path = os.path.join(IMG_DIR, img_id + ".gif")
         imgzip_path = os.path.join(IMG_DIR, img_id + ".zip")
+        imgProfile_path = os.path.join(IMG_DIR, uId + "_profile.jpg")
         
-        if not os.path.isfile(img_path):
-            # Create opener with pixiv referer
-            opener = urllib.request.build_opener()
-            opener.addheaders = [('user-agent', self.USER_AGENT)]
-            opener.addheaders = [('referer','https://www.pixiv.net/')]
+        # Create opener with pixiv referer
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('user-agent', self.USER_AGENT)]
+        opener.addheaders = [('referer','https://www.pixiv.net/')]
+        urllib.request.install_opener(opener)
+        
+        # Check profile image does exist ?
+        if not os.path.isfile(imgProfile_path):
+            # Download profile image
+            urllib.request.urlretrieve(imageProfile_url, imgProfile_path)
             
-            urllib.request.install_opener(opener)
+        # Check image does exist ?
+        if not os.path.isfile(img_path): 
             # Download image
             imgzip_url = img_url.replace("/img-original/", "/img-zip-ugoira/").replace('_ugoira0.jpg','_ugoira600x600.zip')
             urllib.request.urlretrieve(imgzip_url, imgzip_path)
@@ -597,7 +634,15 @@ class Event(Cog_Extension):
         
         domain_url = DOMAIN + img_id + ".gif"
         print(domain_url)
-        return domain_url
+        domain_imageProfile_url = DOMAIN + uId + "_profile.jpg"
+        print(domain_imageProfile_url)
+        return domain_url, domain_imageProfile_url
+        
+   def cleanhtml(self,raw_html):
+      cleanr = re.compile('<.*?>')
+      cleantext = re.sub(cleanr, '', raw_html)
+      return cleantext
+       
 
 def setup(bot):
    bot.add_cog(Event(bot))
