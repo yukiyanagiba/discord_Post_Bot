@@ -431,6 +431,8 @@ class Event(Cog_Extension):
             else:
                 embed=discord.Embed(title='chan.sankakucomplex.com',url=image_url, color=colonn)
                 embed.set_image(url=image_url)
+                embed.set_thumbnail(url=ICON_SANKAKU)
+                embed.set_footer(text="SankakuComplex ")
                 await msg.channel.send(embed=embed)
             try:
                 if not isExplicit:
